@@ -10,6 +10,9 @@ import cv2
 import pdb
 import random
 
+import json
+from collections import OrderedDict
+
 def save_net(fname, net):
     import h5py
     h5f = h5py.File(fname, mode='w')
@@ -54,10 +57,25 @@ def vis_detections(im, class_name, dets, thresh=0.8):
         bbox = tuple(int(np.round(x)) for x in dets[i, :4])
         score = dets[i, -1]
         if score > thresh:
+            countClass(class_name)
             cv2.rectangle(im, bbox[0:2], bbox[2:4], (0, 204, 0), 2)
             cv2.putText(im, '%s: %.3f' % (class_name, score), (bbox[0], bbox[1] + 15), cv2.FONT_HERSHEY_PLAIN,
                         1.0, (0, 0, 255), thickness=1)
     return im
+
+file_data = OrderedDict()
+def countClass(class_name):
+  if class_name in file_data:
+    file_data[class_name] += 1
+  else:
+    file_data[class_name] = 1
+
+def saveClassToJson(file_name):
+  saveFile = {}
+  for key in file_data:
+    saveFile[key] = int(file_data[key] / 2)
+  with open(file_name, 'w', encoding = "utf-8") as make_file:
+    json.dump(saveFile, make_file, ensure_ascii = False, indent = "\t")
 
 
 def adjust_learning_rate(optimizer, decay=0.1):

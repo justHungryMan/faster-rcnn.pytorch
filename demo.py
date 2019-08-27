@@ -30,7 +30,7 @@ from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from model.rpn.bbox_transform import clip_boxes
 from model.nms.nms_wrapper import nms
 from model.rpn.bbox_transform import bbox_transform_inv
-from model.utils.net_utils import save_net, load_net, vis_detections
+from model.utils.net_utils import save_net, load_net, vis_detections, saveClassToJson
 from model.utils.blob import im_list_to_blob
 from model.faster_rcnn.vgg16 import vgg16
 from model.faster_rcnn.resnet import resnet
@@ -159,10 +159,12 @@ if __name__ == '__main__':
   # -- Note: Use validation set and disable the flipped to enable faster loading.
 
   input_dir = args.load_dir + "/" + args.net + "/" + args.dataset
+  #input_dir = args.load_dir
   if not os.path.exists(input_dir):
     raise Exception('There is no input directory for loading network from ' + input_dir)
   load_name = os.path.join(input_dir,
     'faster_rcnn_{}_{}_{}.pth'.format(args.checksession, args.checkepoch, args.checkpoint))
+  #load_name = os.path.join(input_dir, 'resnet101_caffe.pth')
 
   pascal_classes = np.asarray(['__background__',
                        'aeroplane', 'bicycle', 'bird', 'boat',
@@ -175,7 +177,7 @@ if __name__ == '__main__':
   if args.net == 'vgg16':
     fasterRCNN = vgg16(pascal_classes, pretrained=False, class_agnostic=args.class_agnostic)
   elif args.net == 'res101':
-    fasterRCNN = resnet(pascal_classes, 101, pretrained=False, class_agnostic=args.class_agnostic)
+    fasterRCNN = resnet(pascal_classes, 101, pretrained=True, class_agnostic=args.class_agnostic)
   elif args.net == 'res50':
     fasterRCNN = resnet(pascal_classes, 50, pretrained=False, class_agnostic=args.class_agnostic)
   elif args.net == 'res152':
@@ -185,7 +187,7 @@ if __name__ == '__main__':
     pdb.set_trace()
 
   fasterRCNN.create_architecture()
-
+  
   print("load checkpoint %s" % (load_name))
   if args.cuda > 0:
     checkpoint = torch.load(load_name)
@@ -201,7 +203,7 @@ if __name__ == '__main__':
   # pdb.set_trace()
 
   print("load checkpoint %s" % (load_name))
-
+  
   # initilize the tensor holder here.
   im_data = torch.FloatTensor(1)
   im_info = torch.FloatTensor(1)
@@ -294,7 +296,7 @@ if __name__ == '__main__':
 
       scores = cls_prob.data
       boxes = rois.data[:, :, 1:5]
-
+      
       if cfg.TEST.BBOX_REG:
           # Apply bounding-box regression deltas
           box_deltas = bbox_pred.data
@@ -353,6 +355,7 @@ if __name__ == '__main__':
             if vis:
               im2show = vis_detections(im2show, pascal_classes[j], cls_dets.cpu().numpy(), 0.5)
 
+
       misc_toc = time.time()
       nms_time = misc_toc - misc_tic
 
@@ -364,7 +367,8 @@ if __name__ == '__main__':
       if vis and webcam_num == -1:
           # cv2.imshow('test', im2show)
           # cv2.waitKey(0)
-          result_path = os.path.join(args.image_dir, imglist[num_images][:-4] + "_det.jpg")
+          
+          result_path = os.path.join(args.image_dir, "../result/", imglist[num_images][:-4] + "_det.jpg")
           cv2.imwrite(result_path, im2show)
       else:
           cv2.imshow("frame", im2show)
@@ -377,3 +381,6 @@ if __name__ == '__main__':
   if webcam_num >= 0:
       cap.release()
       cv2.destroyAllWindows()
+
+
+saveClassToJson('class_data.json')
